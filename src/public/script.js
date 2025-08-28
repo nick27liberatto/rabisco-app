@@ -60,6 +60,12 @@ fabricCanvas.on('mouse:move', function(opt) {
   }
 });
 
+// Envia o novo objeto desenhado para o servidor
+fabricCanvas.on('path:created', function(e) {
+  const path = e.path;
+  socket.emit('draw-point-live', path.toObject());
+});
+
 // Recebe paths existentes ao conectar
 socket.on('init-drawings', (allPaths) => {
   allPaths.forEach(obj => {

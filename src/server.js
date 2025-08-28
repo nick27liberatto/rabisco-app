@@ -11,10 +11,10 @@ let drawings = []; // cada item = Fabric.js path object
 io.on('connection', (socket) => {
   console.log('Usuário conectado');
 
-
   socket.emit('init-drawings', drawings);
 
   socket.on('draw-point-live', (point) => {
+    drawings.push(point);
     socket.broadcast.emit('draw-point-live', point);
   });
 });
