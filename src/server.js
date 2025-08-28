@@ -1,3 +1,4 @@
+// ...existing code...
 const express = require('express');
 const app = express();
 const http = require('http').createServer(app);
@@ -10,11 +11,11 @@ let drawings = []; // cada item = Fabric.js path object
 io.on('connection', (socket) => {
   console.log('Usuário conectado');
 
+
   socket.emit('init-drawings', drawings);
 
-  socket.on('draw-path', (pathObj) => {
-    drawings.push(pathObj);
-    socket.broadcast.emit('draw-path', pathObj);
+  socket.on('draw-point-live', (point) => {
+    socket.broadcast.emit('draw-point-live', point);
   });
 });
 
