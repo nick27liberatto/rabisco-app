@@ -11,6 +11,22 @@ let brushSize = 2;
 let cursor = 'url(./assets/pencil-white.png) 5 5, auto';
 
 const socket = io();
+
+socket.on('init-drawings', (allPaths) => {
+  allPaths.forEach(obj => {
+    if (!obj.last) return;
+    const line = new fabric.Line([obj.last.x, obj.last.y, obj.x, obj.y], {
+      stroke: obj.color || '#fff',
+      strokeWidth: obj.size || 2,
+      selectable: false,
+      evented: false,
+      objectCaching: false,
+      strokeLineCap: 'round'
+    });
+    fabricCanvas.add(line);
+  });
+});
+
 const fabricCanvas = new fabric.Canvas('board', {
   isDrawingMode: true,
   backgroundColor: backgroundColor,
@@ -54,8 +70,6 @@ if (eraserBtn) {
 
 if (clearBtn) {
   clearBtn.addEventListener('click', () => {
-    fabricCanvas.clear();
-    fabricCanvas.backgroundColor = backgroundColor;
     socket.emit('clear-canvas');
   });
 }
@@ -63,6 +77,21 @@ if (clearBtn) {
 socket.on('clear-canvas', () => {
   fabricCanvas.clear();
   fabricCanvas.backgroundColor = backgroundColor;
+});
+
+document.addEventListener('keydown', (e) => {
+  if (e.ctrlKey  && e.key === 'z') {
+      socket.emit('undo');
+    } 
+});
+
+socket.on('undo', () => {
+  let allObjects = fabricCanvas.getObjects();
+  if (allObjects.length > 0) {
+    var lastObject = allObjects[allObjects.length - 1];
+    fabricCanvas.remove(lastObject);
+    fabricCanvas.renderAll();
+  }
 });
 
 fabricCanvas.on('mouse:down', function(opt) {
@@ -89,39 +118,6 @@ fabricCanvas.on('mouse:move', function(opt) {
 
     lastPoint = point;
   }
-});
-
-fabricCanvas.on('path:created', function(e) {
-  const path = e.path;
-  const commands = path.path;
-
-  if (commands.length < 2) return; 
-  
-  const [move, line] = commands;
-
-  socket.emit('draw-point-live', { 
-    x: line[1], 
-    y: line[2], 
-    last: { x: move[1], y: move[2] }, 
-    lastPoint: null,
-    color: path.stroke, 
-    size: path.strokeWidth 
-  });
-});
-
-socket.on('init-drawings', (allPaths) => {
-  allPaths.forEach(obj => {
-    if (!obj.last) return;
-    const line = new fabric.Line([obj.last.x, obj.last.y, obj.x, obj.y], {
-      stroke: obj.color || '#fff',
-      strokeWidth: obj.size || 2,
-      selectable: false,
-      evented: false,
-      objectCaching: false,
-      strokeLineCap: 'round'
-    });
-    fabricCanvas.add(line);
-  });
 });
 
 socket.on('draw-point-live', ({ x, y, last, color, size }) => {

@@ -15,7 +15,6 @@ let drawings = [];
 
 io.on('connection', (socket) => {
   console.log('Usuário conectado', socket.id);
-
   socket.emit('init-drawings', drawings);
 
   socket.on('draw-point-live', (point) => {
@@ -29,10 +28,21 @@ io.on('connection', (socket) => {
   socket.on('clear-canvas', () => {
     drawings = [];
     if (fs.existsSync(fileName)) {
-      fs.writeFileSync(fileName, "{}");
+      fs.writeFileSync(fileName, JSON.stringify([], null, 2));
     }
     console.log('Canvas limpo por um usuário');
-    socket.broadcast.emit('clear-canvas');
+    io.emit('clear-canvas');
+  });
+
+  socket.on('undo', () => {
+    if (drawings.length > 0){
+      drawings.pop();
+      
+      fs.writeFileSync(fileName, JSON.stringify(drawings, null, 2));
+      
+      console.log('Ação:', drawings.length, 'itens');
+      io.emit('undo');
+    }
   });
 
   socket.on('disconnect', () => {
@@ -42,8 +52,13 @@ io.on('connection', (socket) => {
 
 http.listen(3000, () => {
   if (fs.existsSync(fileName)) {
-    const data = fs.readFileSync(fileName);
-    drawings = JSON.parse(data);
+    try {
+      const data = fs.readFileSync(fileName);
+      drawings = JSON.parse(data);
+      if (!Array.isArray(drawings)) drawings = [];
+    } catch {
+      drawings = [];
+    }
   }
   console.log('Servidor rodando em http://localhost:3000')
 });
